@@ -41,6 +41,7 @@ import org.mapsforge.applications.android.advancedmapviewer.R;
 import org.mapsforge.core.model.BoundingBox;
 import org.mapsforge.core.model.GeoPoint;
 import org.mapsforge.core.model.MapPosition;
+import org.mapsforge.map.reader.header.FileOpenResult;
 import org.mapsforge.map.reader.header.MapFileInfo;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.w3c.dom.Document;
@@ -60,6 +61,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -199,7 +201,9 @@ public class Spurensuche extends MapActivity {
 	// private static final GeoPoint BRANDENBURG_GATE = new GeoPoint(52.516273, 13.377725);
 	private static final GeoPoint THG_HEILBRONN = new GeoPoint(49.142597, 9.227289); // 49.142976, 9.227010 (Pascha)
 	// private static final GeoPoint CENTRAL_STATION = new GeoPoint(52.52498, 13.36962);
-	private static final GeoPoint HARMONIE_HEILBRONN = new GeoPoint(49.142850, 9.222761);
+	// private static final GeoPoint HARMONIE_HEILBRONN = new GeoPoint(49.142850, 9.222761);
+	// private static final File MAP_FILE = new File(Environment.getExternalStorageDirectory().getPath(), "/germany.map");
+	// private static final File XML_FILE = new File(Environment.getExternalStorageDirectory().getPath(), "/xml-dataset.xml");
 	
 	private MyLocationOverlay myLocationOverlay;
 	private ScreenshotCapturer screenshotCapturer;
@@ -468,9 +472,18 @@ public class Spurensuche extends MapActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		// *** Testwise two markers
-		Marker marker1 = createMarker(R.drawable.marker_red, HARMONIE_HEILBRONN);
+		// orientation fixed to lanscape. also needed attribute in manifest under activity-tag like the following
+		// android:screenOrientation="nosensor"
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);  
+		/*
+		FileOpenResult fileOpenResult = mapView.setMapFile(MAP_FILE);
+		if (!fileOpenResult.isSuccess()) {
+			Toast.makeText(this, fileOpenResult.getErrorMessage(), Toast.LENGTH_LONG).show();
+			finish();
+		}
+		*/
+		// *** one static marker on school location
+		// Marker marker1 = createMarker(R.drawable.marker_red, HARMONIE_HEILBRONN);
 		Marker marker2 = createMarker(R.drawable.marker_green, THG_HEILBRONN);
 		
 		this.screenshotCapturer = new ScreenshotCapturer(this);
@@ -507,7 +520,7 @@ public class Spurensuche extends MapActivity {
 		ListOverlay listOverlay = new ListOverlay();
 		List<OverlayItem> overlayItems = listOverlay.getOverlayItems();
 		
-		overlayItems.add(marker1);
+		// overlayItems.add(marker1);
 		overlayItems.add(marker2);
 		mapView.getOverlays().add(listOverlay);
 
@@ -526,8 +539,14 @@ public class Spurensuche extends MapActivity {
 		/**
 		 * Fetch the xml-dataset.xml
 		 */
+		
 		try {
-	    	File fXmlFile = new File(Environment.getExternalStorageDirectory().getPath() + "/xml-dataset.xml");
+			File fXmlFile = new File(Environment.getExternalStorageDirectory().getPath() + "/xml-dataset.xml");
+			if(!fXmlFile.exists()) {
+				Toast.makeText(this, fXmlFile.getPath()+" does not exist. File Open Error.", Toast.LENGTH_LONG).show();
+				finish();
+			}
+			
 	    	DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 	    	DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 	    	Document doc = dBuilder.parse(fXmlFile);
@@ -580,9 +599,11 @@ public class Spurensuche extends MapActivity {
 	    		addTotalScore(workitems.get(temp).getScore());
 	    		
 	    	}
-	        } catch (Exception e) {
+	    } catch (Exception e) {
 	    	e.printStackTrace();
-	        }
+	    	showToastOnUiThread(e.getLocalizedMessage());
+	    	finish();
+	    }
 		
 		
 		/**
